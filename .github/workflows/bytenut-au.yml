@@ -1,4 +1,4 @@
-name: Bytenut Auto Renew
+name: Bytenut-AU Auto Renew
 
 on:
   # 定时触发 - 每4小时运行一次
@@ -20,7 +20,7 @@ jobs:
     - name: Checkout private repository
       uses: actions/checkout@v4
       with:
-        repository: kamanmuez/ByteNut-Auto-Renew
+        repository: kamanmuez/ByteNut-AU-Auto-Renew
         token: ${{ secrets.PRIVATE_REPO_TOKEN }}
         path: scripts
     
@@ -78,4 +78,5 @@ jobs:
         GITHUB_TOKEN: ${{ github.token }}
       with:
         repository: ${{ github.repository }}
+
         older-than-seconds: 86400  # 删除24小时前的记录
