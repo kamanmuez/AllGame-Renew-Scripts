@@ -1,4 +1,4 @@
-name: Bytenut Auto Renew
+name: Bytenut-SG Auto Renew
 
 on:
   # 定时触发 - 每4小时运行一次
@@ -20,7 +20,7 @@ jobs:
     - name: Checkout private repository
       uses: actions/checkout@v4
       with:
-        repository: kamanmuez/ByteNut-Auto-Renew
+        repository: kamanmuez/ByteNut-SG-Auto-Renew
         token: ${{ secrets.PRIVATE_REPO_TOKEN }}
         path: scripts
     
