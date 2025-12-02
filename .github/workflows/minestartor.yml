@@ -1,0 +1,58 @@
+name: Minestrator Auto Restart
+
+on:
+  schedule:
+    # 每小时运行一次（每小时的第0分钟）
+    - cron: '0 * * * *'
+  
+  workflow_dispatch:  # 允许手动触发
+
+jobs:
+  restart:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    
+    permissions:
+      actions: write   # 允许删除工作流运行记录
+    
+    steps:
+    - name: Checkout private script repository
+      uses: actions/checkout@v4
+      with:
+        repository: kamanmuez/Minestrator-Auto-Restart  # 替换为你的私有仓库名称 username/repo-name
+        token: ${{ secrets.PRIVATE_REPO_TOKEN }}  # 需要有读取私库权限的 PAT
+        path: scripts
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        cd scripts
+        pip install --upgrade pip
+        pip install requests
+    
+    - name: Run restart script
+      env:
+        MINESTRATOR_TOKEN: ${{ secrets.MINESTRATOR_TOKEN }}
+      run: |
+        cd scripts
+        python restart.py
+    
+    - name: Upload server info
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: server-info-${{ github.run_number }}
+        path: scripts/server_info.json
+        retention-days: 7
+    
+    - name: Clean up old workflow runs
+      uses: MajorScruffy/delete-old-workflow-runs@v0.3.0
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+      with:
+        repository: ${{ github.repository }}
+        older-than-seconds: 10800  # 删除3小时前的记录
