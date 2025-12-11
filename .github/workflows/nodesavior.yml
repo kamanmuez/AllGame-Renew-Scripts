@@ -1,0 +1,83 @@
+name: NodeSavior Auto Sign
+
+on:
+  schedule:
+    # 每8小时运行一次
+    - cron: '0 */8 * * *'
+  workflow_dispatch:  # 允许手动触发
+
+jobs:
+  auto-sign:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    
+    permissions:
+      actions: write
+    
+    steps:
+    - name: Checkout private script repository
+      uses: actions/checkout@v4
+      with:
+        repository: kamanmuez/NodeSavior-Auto-Sign  # 私库地址，格式: username/repo-name
+        token: ${{ secrets.PRIVATE_REPO_TOKEN }}  # 需要有读取私库权限的 PAT
+        path: scripts
+    
+    - name: Set up WARP
+      continue-on-error: true
+      timeout-minutes: 3
+      uses: fscarmen/warp-on-actions@v1.4
+      with:
+        stack: dual
+        mode: wireguard
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+        
+    - name: Install dependencies
+      working-directory: scripts
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        
+    - name: Install Playwright browser
+      run: playwright install chromium --with-deps
+        
+    - name: Run sign script
+      env:
+        REMEMBER_WEB_COOKIE: ${{ secrets.REMEMBER_WEB_COOKIE }}
+        TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+        TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        TZ: Asia/Shanghai
+      working-directory: scripts
+      run: python main.py
+        
+    - name: Upload screenshots
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: screenshots-${{ github.run_number }}
+        path: scripts/*.png
+        retention-days: 7
+        if-no-files-found: ignore
+        
+    - name: Show completion
+      if: always()
+      env:
+        TZ: Asia/Shanghai
+      run: |
+        echo "============================================"
+        echo "🎉 签到任务完成"
+        echo "⏰ 执行时间: $(date +'%Y-%m-%d %H:%M:%S') (北京时间)"
+        echo "============================================"
+        echo "📸 生成的截图文件："
+        ls -la scripts/*.png 2>/dev/null || echo "无截图文件"
+
+    - name: Clean up old workflow runs
+      uses: MajorScruffy/delete-old-workflow-runs@v0.3.0
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+      with:
+        repository: ${{ github.repository }}
+        older-than-seconds: 86400  # 删除24小时前的记录
